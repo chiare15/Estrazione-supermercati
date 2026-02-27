@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estrai Supermercato</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --card: #1a1a1a;
+    --accent: #f0c040;
+    --accent2: #e05a2b;
+    --text: #f5f0e8;
+    --muted: #888;
+    --border: #2a2a2a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse at 20% 20%, rgba(240,192,64,0.07) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(224,90,43,0.07) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .screen {
+    display: none;
+    width: 100%;
+    max-width: 460px;
+    padding: 2rem;
+  }
+  .screen.active { display: block; }
+
+  /* LOGIN */
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 3rem;
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+  .logo span { color: var(--accent); }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 3rem;
+    font-weight: 300;
+  }
+
+  .label {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.1rem;
+    padding: 0.9rem 1.1rem;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 1.5rem;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+
+  .btn {
+    width: 100%;
+    background: var(--accent);
+    color: #0f0f0f;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    padding: 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(240,192,64,0.3);
+  }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* MAIN */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3rem;
+  }
+  .greeting {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+  .greeting small {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.1rem;
+  }
+  .logout-btn {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .logout-btn:hover { border-color: var(--muted); color: var(--text); }
+
+  /* RESULT CARD */
+  .result-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    padding: 2.5rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(240,192,64,0.06), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .result-card.revealed::before { opacity: 1; }
+
+  .result-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.8rem;
+  }
+
+  .result-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: var(--accent);
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.5s, transform 0.5s;
+  }
+  .result-name.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .result-emoji {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: opacity 0.4s 0.1s, transform 0.4s 0.1s;
+  }
+  .result-emoji.visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .placeholder-text {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 300;
+  }
+
+  /* SLOT MACHINE SPIN */
+  .slot-container {
+    overflow: hidden;
+    height: 2.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .slot-reel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: none;
+  }
+  .slot-reel.spinning {
+    animation: slot-spin 0.08s linear infinite;
+  }
+  @keyframes slot-spin {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-2.8rem); }
+  }
+
+  /* EXTRACT BTN */
+  .extract-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent2), #c0392b);
+    color: white;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+    padding: 1.1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .extract-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+  }
+  .extract-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(224,90,43,0.4);
+  }
+  .extract-btn:active { transform: translateY(0); }
+  .extract-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .history {
+    margin-top: 2rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1.5rem;
+  }
+  .history h3 {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .history-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+  .history-item .hname { font-weight: 500; }
+  .history-item .hdate { color: var(--muted); font-size: 0.78rem; }
+
+  .spin-icon {
+    display: inline-block;
+    transition: transform 0.3s;
+  }
+  .extract-btn:not(:disabled):hover .spin-icon {
+    animation: spin 0.5s ease;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Error msg */
+  .error-msg {
+    color: #e05a2b;
+    font-size: 0.82rem;
+    margin-top: -1rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="screen active" id="login-screen">
+  <div class="logo">ESTRAI<br><span>SUPER</span></div>
+  <p class="subtitle">Scopri dove fare la spesa oggi</p>
+
+  <label class="label" for="name-input">Il tuo nome</label>
+  <input type="text" id="name-input" placeholder="Es. Mario" autocomplete="off" maxlength="30">
+  <p class="error-msg" id="login-error">Inserisci il tuo nome per continuare.</p>
+  <button class="btn" id="login-btn">Entra →</button>
+</div>
+
+<!-- MAIN SCREEN -->
+<div class="screen" id="main-screen">
+  <div class="topbar">
+    <div class="greeting">
+      Ciao, <span id="display-name">—</span>!
+      <small>Premi il pulsante per scoprire il tuo supermercato</small>
+    </div>
+    <button class="logout-btn" id="logout-btn">Esci</button>
+  </div>
+
+  <div class="result-card" id="result-card">
+    <div id="placeholder-content">
+      <p class="placeholder-text">Nessuna estrazione ancora</p>
+    </div>
+    <div id="result-content" style="display:none; text-align:center; width:100%;">
+      <p class="result-label">Il tuo supermercato</p>
+      <div class="result-emoji" id="result-emoji">🛒</div>
+      <div class="result-name" id="result-name"></div>
+    </div>
+  </div>
+
+  <button class="extract-btn" id="extract-btn">
+    <span class="spin-icon">🎰</span> ESTRAI SUPERMERCATO
+  </button>
+
+  <div class="history" id="history-section" style="display:none;">
+    <h3>Storico estrazioni</h3>
+    <div class="history-list" id="history-list"></div>
+  </div>
+</div>
+
+<script>
+  const SUPERMERCATI = [
+    { name: "Esselunga",  emoji: "🛍️" },
+    { name: "Carrefour",  emoji: "🛒" },
+    { name: "Lidl",       emoji: "🥨" },
+    { name: "Conad",      emoji: "🌟" },
+    { name: "Eurospin",   emoji: "💰" },
+    { name: "Tigros",     emoji: "🐯" },
+    { name: "Coop",       emoji: "🤝" },
+    { name: "Famila",     emoji: "🏠" },
+    { name: "Bennet",     emoji: "🏬" },
+    { name: "Basko",      emoji: "🧺" },
+    { name: "Italmark",   emoji: "🇮🇹" },
+    { name: "MD",         emoji: "🔵" },
+    { name: "Unes",       emoji: "🟡" },
+    { name: "PAM",        emoji: "🛎️" },
+  ];
+
+  const STORAGE_KEY = "supermercato_data";
+
+  function loadData() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch { return {}; }
+  }
+  function saveData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+  // Elements
+  const loginScreen  = document.getElementById("login-screen");
+  const mainScreen   = document.getElementById("main-screen");
+  const nameInput    = document.getElementById("name-input");
+  const loginBtn     = document.getElementById("login-btn");
+  const loginError   = document.getElementById("login-error");
+  const displayName  = document.getElementById("display-name");
+  const extractBtn   = document.getElementById("extract-btn");
+  const resultCard   = document.getElementById("result-card");
+  const resultName   = document.getElementById("result-name");
+  const resultEmoji  = document.getElementById("result-emoji");
+  const placeholderContent = document.getElementById("placeholder-content");
+  const resultContent = document.getElementById("result-content");
+  const historySection = document.getElementById("history-section");
+  const historyList    = document.getElementById("history-list");
+  const logoutBtn      = document.getElementById("logout-btn");
+
+  let currentUser = null;
+
+  function login(name) {
+    name = name.trim();
+    if (!name) {
+      loginError.classList.add("show");
+      return;
+    }
+    loginError.classList.remove("show");
+    currentUser = name;
+    displayName.textContent = name;
+    loginScreen.classList.remove("active");
+    mainScreen.classList.add("active");
+    renderUserState();
+  }
+
+  function logout() {
+    currentUser = null;
+    mainScreen.classList.remove("active");
+    loginScreen.classList.add("active");
+    nameInput.value = "";
+    // reset
+    placeholderContent.style.display = "";
+    resultContent.style.display = "none";
+    resultCard.classList.remove("revealed");
+    resultName.classList.remove("visible");
+    resultEmoji.classList.remove("visible");
+    historySection.style.display = "none";
+    extractBtn.disabled = false;
+  }
+
+  function renderUserState() {
+    const data = loadData();
+    const userData = data[currentUser];
+    if (userData && userData.extractions && userData.extractions.length > 0) {
+      const last = userData.extractions[userData.extractions.length - 1];
+      showResult(last.name, last.emoji, false);
+      renderHistory(userData.extractions);
+      // Already extracted → same result forever (disable button)
+      extractBtn.disabled = true;
+      extractBtn.textContent = "✓ Già estratto — " + last.name;
+    } else {
+      extractBtn.disabled = false;
+      extractBtn.innerHTML = '<span class="spin-icon">🎰</span> ESTRAI SUPERMERCATO';
+    }
+  }
+
+  function showResult(name, emoji, animate) {
+    placeholderContent.style.display = "none";
+    resultContent.style.display = "block";
+    resultName.textContent = name;
+    resultEmoji.textContent = emoji;
+    resultCard.classList.add("revealed");
+    if (animate) {
+      setTimeout(() => {
+        resultEmoji.classList.add("visible");
+        resultName.classList.add("visible");
+      }, 50);
+    } else {
+      resultEmoji.classList.add("visible");
+      resultName.classList.add("visible");
+    }
+  }
+
+  function renderHistory(extractions) {
+    historyList.innerHTML = "";
+    [...extractions].reverse().forEach(e => {
+      const div = document.createElement("div");
+      div.className = "history-item";
+      div.innerHTML = `<span class="hname">${e.emoji} ${e.name}</span><span class="hdate">${e.date}</span>`;
+      historyList.appendChild(div);
+    });
+    historySection.style.display = "block";
+  }
+
+  function doExtraction() {
+    extractBtn.disabled = true;
+    // Spinning animation
+    let spinCount = 0;
+    const maxSpins = 14;
+    let idx = 0;
+    placeholderContent.style.display = "none";
+    resultContent.style.display = "block";
+    resultCard.classList.add("revealed");
+    resultEmoji.classList.add("visible");
+    resultName.classList.add("visible");
+
+    const interval = setInterval(() => {
+      idx = Math.floor(Math.random() * SUPERMERCATI.length);
+      resultName.textContent = SUPERMERCATI[idx].name;
+      resultEmoji.textContent = SUPERMERCATI[idx].emoji;
+      spinCount++;
+      if (spinCount >= maxSpins) {
+        clearInterval(interval);
+        // Final pick
+        const finalIdx = Math.floor(Math.random() * SUPERMERCATI.length);
+        const chosen = SUPERMERCATI[finalIdx];
+        resultName.textContent = chosen.name;
+        resultEmoji.textContent = chosen.emoji;
+
+        // Persist
+        const data = loadData();
+        if (!data[currentUser]) data[currentUser] = { extractions: [] };
+        const now = new Date();
+        const dateStr = now.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+        data[currentUser].extractions.push({ name: chosen.name, emoji: chosen.emoji, date: dateStr });
+        saveData(data);
+        renderHistory(data[currentUser].extractions);
+
+        extractBtn.disabled = true;
+        extractBtn.innerHTML = `✓ Già estratto — ${chosen.name}`;
+      }
+    }, 80);
+  }
+
+  // Events
+  loginBtn.addEventListener("click", () => login(nameInput.value));
+  nameInput.addEventListener("keydown", e => { if (e.key === "Enter") login(nameInput.value); });
+  extractBtn.addEventListener("click", doExtraction);
+  logoutBtn.addEventListener("click", logout);
+
+  // Auto-login if just revisiting (optional: skip)
+</script>
+</body>
+</html>
